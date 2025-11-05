@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Prompt House - 个人提示词收藏库</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1', // 靛蓝色作为主色调
+            secondary: '#8b5cf6', // 紫色作为辅助色
+            accent: '#ec4899', // 粉色作为强调色
+            neutral: {
+              100: '#f3f4f6',
+              200: '#e5e7eb',
+              300: '#d1d5db',
+              400: '#9ca3af',
+              500: '#6b7280',
+              600: '#4b5563',
+              700: '#374151',
+              800: '#1f2937',
+              900: '#111827',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-in-out',
+            'slide-up': 'slideUp 0.3s ease-in-out',
+            'pulse-light': 'pulseLight 2s infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            pulseLight: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.7' },
+            }
+          },
+          boxShadow: {
+            'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glass-effect {
+        @apply bg-white bg-opacity-80 backdrop-blur-md;
+      }
+      .card-transition {
+        @apply transition-all duration-300 ease-in-out;
+      }
+      .tag-pill {
+        @apply px-3 py-1 rounded-full text-sm font-medium cursor-pointer transition-all duration-200;
+      }
+      .tag-pill-active {
+        @apply bg-primary text-white;
+      }
+      .tag-pill-inactive {
+        @apply bg-neutral-100 text-neutral-600 hover:bg-neutral-200;
+      }
+      .btn-primary {
+        @apply bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:outline-none;
+      }
+      .btn-secondary {
+        @apply bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-700 font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-neutral-200 focus:outline-none;
+      }
+      .btn-danger {
+        @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-red-400 focus:outline-none;
+      }
+      .input-field {
+        @apply w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200;
+      }
+      .textarea-field {
+        @apply w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200 resize-none;
+      }
+    }
+    
+    /* 自定义滚动条 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a1a1a1;
+    }
+    
+    /* 卡片动画 */
+    .prompt-card {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* 标签动画 */
+    .tag-item {
+      transition: all 0.2s ease;
+    }
+    
+    /* 模态框动画 */
+    .modal {
+      transition: opacity 0.3s ease;
+    }
+    
+    .modal-content {
+      transition: transform 0.3s ease;
+    }
+    
+    .modal.active {
+      opacity: 1;
+    }
+    
+    .modal.active .modal-content {
+      transform: translateY(0);
+    }
+    
+    /* 骨架屏动画 */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+    
+    @keyframes skeleton-loading {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-neutral-800 min-h-screen">
+  <!-- 顶部导航栏 -->
+  <header class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-lightbulb-o text-primary text-2xl"></i>
+        <h1 class="text-2xl font-bold text-neutral-800">My Prompt House</h1>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <button id="new-prompt-btn" class="btn-primary flex items-center justify-center">
+          <i class="fa fa-plus mr-2"></i>
+          <span>新建提示词</span>
+        </button>
+        
+        <div class="relative">
+          <select id="view-toggle" class="input-field appearance-none pr-10 py-2">
+            <option value="grid">网格视图</option>
+            <option value="list">列表视图</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
+            <i class="fa fa-chevron-down text-xs"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-6">
+    <!-- 标签筛选区 -->
+    <section id="tag-filter" class="mb-8">
+      <h2 class="text-lg font-semibold mb-3 flex items-center">
+        <i class="fa fa-tags text-primary mr-2"></i>
+        标签筛选
+      </h2>
+      
+      <div id="tags-container" class="flex flex-wrap gap-2">
+        <!-- 标签将通过JavaScript动态生成 -->
+        <div class="skeleton h-8 w-20 rounded-full"></div>
+        <div class="skeleton h-8 w-24 rounded-full"></div>
+        <div class="skeleton h-8 w-16 rounded-full"></div>
+      </div>
+    </section>
+    
+    <!-- 提示词卡片列表 -->
+    <section id="prompt-list" class="mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">我的提示词收藏</h2>
+        <div id="filter-info" class="text-sm text-neutral-500"></div>
+      </div>
+      
+      <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+        <div class="bg-neutral-100 p-6 rounded-full mb-4">
+          <i class="fa fa-clipboard text-neutral-400 text-4xl"></i>
+        </div>
+        <h3 class="text-xl font-medium text-neutral-700 mb-2">暂无提示词</h3>
+        <p class="text-neutral-500 mb-6 max-w-md">点击"新建提示词"按钮开始创建你的第一个提示词卡片</p>
+        <button id="empty-new-btn" class="btn-primary">
+          <i class="fa fa-plus mr-2"></i>
+          新建提示词
+        </button>
+      </div>
+      
+      <div id="prompts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- 卡片将通过JavaScript动态生成 -->
+        <!-- 骨架屏占位 -->
+        <div class="skeleton h-64 rounded-xl"></div>
+        <div class="skeleton h-64 rounded-xl"></div>
+        <div class="skeleton h-64 rounded-xl"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white border-t border-neutral-200 py-6">
+    <div class="container mx-auto px-4 text-center text-neutral-500 text-sm">
+      <p>© 2025 My Prompt House - 个人提示词收藏库</p>
+      <p class="mt-1">用技术提升创作效率</p>
+    </div>
+  </footer>
+
+  <!-- 新建/编辑提示词弹窗 -->
+  <div id="prompt-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 opacity-0 pointer-events-none">
+    <div class="modal-content transform translate-y-8 w-full max-w-2xl bg-white rounded-xl shadow-xl overflow-hidden">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 id="modal-title" class="text-xl font-bold">新建提示词</h3>
+          <button id="close-modal" class="text-neutral-500 hover:text-neutral-700 transition-colors">
+            <i class="fa fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <form id="prompt-form">
+          <input type="hidden" id="prompt-id">
+          
+          <div class="mb-4">
+            <label for="prompt-title" class="block text-sm font-medium text-neutral-700 mb-1">标题 <span class="text-red-500">*</span></label>
+            <input type="text" id="prompt-title" class="input-field" placeholder="输入提示词标题" required>
+          </div>
+          
+          <div class="mb-4">
+            <label for="prompt-content" class="block text-sm font-medium text-neutral-700 mb-1">内容 <span class="text-red-500">*</span></label>
+            <textarea id="prompt-content" class="textarea-field h-32" placeholder="输入提示词内容" required></textarea>
+          </div>
+          
+          <div class="mb-6">
+            <label for="prompt-tags" class="block text-sm font-medium text-neutral-700 mb-1">标签</label>
+            <div class="flex flex-col gap-2">
+              <input type="text" id="prompt-tags" class="input-field" placeholder="输入标签，用逗号分隔或点击已有标签">
+              
+              <div id="selected-tags" class="flex flex-wrap gap-2 flex-wrap">
+                <!-- 已选标签将在这里显示 -->
+              </div>
+              
+              <div id="suggested-tags" class="flex flex-wrap gap-2 mt-2">
+                <!-- 推荐标签将在这里显示 -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-3">
+            <button type="button" id="cancel-btn" class="btn-secondary">取消</button>
+            <button type="submit" id="save-btn" class="btn-primary">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div id="delete-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 opacity-0 pointer-events-none">
+    <div class="modal-content transform translate-y-8 w-full max-w-md-lg bg-white rounded-xl shadow-xl overflow-hidden">
+      <div class="p-6">
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+            <i class="fa fa-exclamation-triangle text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-neutral-800">确认删除</h3>
+          <p class="text-neutral-600 mt-2">你确定要删除这个个提示词卡片吗？此操作无法撤销。</p>
+        </div>
+        
+        <div class="flex justify-center gap-3">
+          <button id="cancel-delete" class="btn-secondary">取消</button>
+          <button id="confirm-delete" class="btn-danger">删除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通知提示 -->
+  <div id="notification" class="fixed bottom-4 right-4 z-50 max-w-xs bg-white rounded-lg shadow-lg p-4 transform translate-y-20 opacity-0 transition-all duration-300 flex items-start">
+    <div id="notification-icon" class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-3">
+      <i id="notification-icon-i" class="fa"></i>
+    </div>
+    <div class="flex-1">
+      <h4 id="notification-title" class="font-medium text-neutral-800"></h4>
+      <p id="notification-message" class="text-sm text-neutral-600 mt-1"></p>
+    </div>
+    <button id="close-notification" class="text-neutral-400 hover:text-neutral-600 ml-4">
+      <i class="fa fa-times"></i>
+    </button>
+  </div>
+
+  <script>
+    // 全局变量
+    let prompts = [];
+    let selectedTags = [];
+    let currentView = 'grid';
+    let editingPromptId = null;
+    let deletePromptId = null;
+    
+    // DOM 元素
+    const promptsContainer = document.getElementById('prompts-container');
+    const tagsContainer = document.getElementById('tags-container');
+    const filterInfo = document.getElementById('filter-info');
+    const emptyState = document.getElementById('empty-state');
+    const promptModal = document.getElementById('prompt-modal');
+    const deleteModal = document.getElementById('delete-modal');
+    const promptForm = document.getElementById('prompt-form');
+    const modalTitle = document.getElementById('modal-title');
+    const promptIdInput = document.getElementById('prompt-id');
+    const promptTitleInput = document.getElementById('prompt-title');
+    const promptContentInput = document.getElementById('prompt-content');
+    const promptTagsInput = document.getElementById('prompt-tags');
+    const selectedTagsContainer = document.getElementById('selected-tags');
+    const suggestedTagsContainer = document.getElementById('suggested-tags');
+    const viewToggle = document.getElementById('view-toggle');
+    const notification = document.getElementById('notification');
+    const notificationTitle = document.getElementById('notification-title');
+    const notificationMessage = document.getElementById('notification-message');
+    const notificationIcon = document.getElementById('notification-icon');
+    const notificationIconI = document.getElementById('notification-icon-i');
+    
+    // 初始化应用
+    function initApp() {
+      // 从 localStorage 加载数据
+      loadPrompts();
+      
+      // 渲染提示词卡片
+      renderPrompts();
+      
+      // 渲染标签
+      renderTags();
+      
+      // 设置事件监听器
+      setupEventListeners();
+      
+      // 检查是否有示例数据，如果没有则添加
+      checkSampleData();
+    }
+    
+    // 从 localStorage 加载数据
+    function loadPrompts() {
+      const savedPrompts = localStorage.getItem('myPromptHouse');
+      if (savedPrompts) {
+        prompts = JSON.parse(savedPrompts);
+      } else {
+        prompts = [];
+      }
+    }
+    
+    // 保存数据到 localStorage
+    function savePrompts() {
+      localStorage.setItem('myPromptHouse', JSON.stringify(prompts));
+    }
+    
+    // 渲染提示词卡片
+    function renderPrompts() {
+      // 清空容器
+      promptsContainer.innerHTML = '';
+      
+      // 检查是否有提示词
+      if (prompts.length === 0) {
+        emptyState.classList.remove('hidden');
+        promptsContainer.classList.add('hidden');
+        return;
+      }
+      
+      // 显示提示词列表，隐藏空状态
+      emptyState.classList.add('hidden');
+      promptsContainer.classList.remove('hidden');
+      
+      // 根据当前视图设置容器类
+      if (currentView === 'grid') {
+        promptsContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+      } else {
+        promptsContainer.className = 'flex flex-col gap-4';
+      }
+      
+      // 筛选提示词
+      let filteredPrompts = prompts;
+      if (selectedTags.length > 0) {
+        filteredPrompts = prompts.filter(prompt => {
+          return selectedTags.every(tag => prompt.tags.includes(tag));
+        });
+      }
+      
+      // 更新筛选信息
+      if (selectedTags.length > 0) {
+        filterInfo.textContent = `已筛选: ${selectedTags.length} 个标签，共 ${filteredPrompts.length} 个提示词`;
+      } else {
+        filterInfo.textContent = `共 ${prompts.length} 个提示词`;
+      }
+      
+      // 如果没有符合筛选条件的提示词
+      if (filteredPrompts.length === 0) {
+        const noResultsHTML = `
+          <div class="col-span-full flex flex-col items-center justify-center py-12 text-center">
+            <div class="bg-neutral-100 p-6 rounded-full mb-4">
+              <i class="fa fa-search text-neutral-400 text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-medium text-neutral-700 mb-2">未找到匹配的提示词</h3>
+            <p class="text-neutral-500 mb-6 max-w-md">尝试调整筛选条件或创建新的提示词</p>
+            <button id="no-results-new-btn" class="btn-primary">
+              <i class="fa fa-plus mr-2"></i>
+              新建提示词
+            </button>
+          </div>
+        `;
+        promptsContainer.innerHTML = noResultsHTML;
+        
+        // 添加事件监听器
+        document.getElementById('no-results-new-btn').addEventListener('click', openNewPromptModal);
+        return;
+      }
+      
+      // 渲染提示词卡片
+      filteredPrompts.forEach(prompt => {
+        const cardHTML = createPromptCardHTML(prompt);
+        promptsContainer.innerHTML += cardHTML;
+      });
+      
+      // 添加卡片事件监听器
+      addCardEventListeners();
+    }
+    
+    // 创建提示词卡片 HTML
+    function createPromptCardHTML(prompt) {
+      // 截断内容
+      const truncatedContent = prompt.content.length > 150 
+        ? prompt.content.substring(0, 150) + '...' 
+        : prompt.content;
+      
+      // 格式化日期
+      const formattedDate = new Date(prompt.createdAt).toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      
+      // 生成标签 HTML
+      const tagsHTML = prompt.tags.map(tag => `
+        <span class="tag-pill tag-pill-inactive" data-tag="${tag}">
+          ${tag}
+        </span>
+      `).join('');
+      
+      // 根据视图类型返回不同的 HTML
+      if (currentView === 'grid') {
+        return `
+          <div class="prompt-card bg-white rounded-xl shadow-card hover:shadow-card-hover card-transition overflow-hidden" data-id="${prompt.id}">
+            <div class="p-5">
+              <div class="flex justify-between items-start mb-3">
+                <h3 class="text-lg font-semibold text-neutral-800 line-clamp-1">${prompt.title}</h3>
+                <div class="flex space-x-1">
+                  <button class="edit-btn p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500 transition-colors" title="编辑">
+                    <i class="fa fa-pencil"></i>
+                  </button>
+                  <button class="delete-btn p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500 transition-colors" title="删除">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <p class="text-neutral-600 text-sm mb-4 line-clamp-3">${truncatedContent}</p>
+              
+              <div class="flex flex-wrap gap-2 mb-4">
+                ${tagsHTML}
+              </div>
+              
+              <div class="text-xs text-neutral-400 flex justify-between items-center">
+                <span>创建于 ${formattedDate}</span>
+                <button class="copy-btn text-primary hover:text-primary/80 transition-colors flex items-center">
+                  <i class="fa fa-copy mr-1"></i> 复制
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="prompt-card bg-white rounded-xl shadow-card hover:shadow-card-hover card-transition p-5" data-id="${prompt.id}">
+            <div class="flex flex-col md:flex-row">
+              <div class="flex-1 md:mr-6">
+                <div class="flex justify-between items-start mb-3">
+                  <h3 class="text-xl font-semibold text-neutral-800">${prompt.title}</h3>
+                  <div class="flex space-x-1">
+                    <button class="edit-btn p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500 transition-colors" title="编辑">
+                      <i class="fa fa-pencil"></i>
+                    </button>
+                    <button class="delete-btn p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500 transition-colors" title="删除">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <p class="text-neutral-600 mb-4">${prompt.content}</p>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                  ${tagsHTML}
+                </div>
+                
+                <div class="text-xs text-neutral-400">
+                  <span>创建于 ${formattedDate}</span>
+                </div>
+              </div>
+              
+              <div class="mt-4 md:mt-0 md:ml-auto flex items-center">
+                <button class="copy-btn btn-primary">
+                  <i class="fa fa-copy mr-2"></i> 复制内容
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // 添加卡片事件监听器
+    function addCardEventListeners() {
+      // 编辑按钮
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const card = e.target.closest('.prompt-card');
+          const id = card.dataset.id;
+          openEditPromptModal(id);
+        });
+      });
+      
+      // 删除按钮
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const card = e.target.closest('.prompt-card');
+          const id = card.dataset.id;
+          openDeletePromptModal(id);
+        });
+      });
+      
+      // 复制按钮
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const card = e.target.closest('.prompt-card');
+          const id = card.dataset.id;
+          const prompt = prompts.find(p => p.id === id);
+          
+          if (prompt) {
+            navigator.clipboard.writeText(prompt.content)
+              .then(() => {
+                showNotification('复制成功', '提示词内容已复制到剪贴板', 'success');
+                
+                // 添加复制成功动画
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa fa-check mr-1"></i> 已复制';
+                btn.disabled = true;
+                
+                setTimeout(() => {
+                  btn.innerHTML = originalText;
+                  btn.disabled = false;
+                }, 2000);
+              })
+              .catch(err => {
+                showNotification('复制失败', '无法复制内容，请手动复制', 'error');
+                console.error('无法复制内容: ', err);
+              });
+          }
+        });
+      });
+      
+      // 标签点击事件
+      document.querySelectorAll('.tag-pill').forEach(tag => {
+        tag.addEventListener('click', (e) => {
+          const tagText = e.target.dataset.tag;
+          toggleTagFilter(tagText);
+        });
+      });
+    }
+    
+    // 渲染标签
+    function renderTags() {
+      // 获取所有标签并计算每个标签的使用次数
+      const tagCounts = {};
+      prompts.forEach(prompt => {
+        prompt.tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      });
+      
+      // 清空标签容器
+      tagsContainer.innerHTML = '';
+      
+      // 添加"全部"标签
+      const allTagsHTML = `
+        <span class="tag-pill ${selectedTags.length === 0 ? 'tag-pill-active' : 'tag-pill-inactive'}" data-tag="all">
+          全部 <span class="ml-1">(${prompts.length})</span>
+        </span>
+      `;
+      tagsContainer.innerHTML += allTagsHTML;
+      
+      // 添加各个标签
+      Object.keys(tagCounts).forEach(tag => {
+        const isActive = selectedTags.includes(tag);
+        const tagHTML = `
+          <span class="tag-pill ${isActive ? 'tag-pill-active' : 'tag-pill-inactive'}" data-tag="${tag}">
+            ${tag} <span class="ml-1">(${tagCounts[tag]})</span>
+          </span>
+        `;
+        tagsContainer.innerHTML += tagHTML;
+      });
+      
+      // 添加标签点击事件
+      document.querySelectorAll('#tag-filter .tag-pill').forEach(tag => {
+        tag.addEventListener('click', (e) => {
+          const tagText = e.target.dataset.tag;
+          
+          if (tagText === 'all') {
+            // 清除所有筛选
+            selectedTags = [];
+          } else {
+            // 切换标签筛选
+            toggleTagFilter(tagText);
+          }
+          
+          // 重新渲染
+          renderTags();
+          renderPrompts();
+        });
+      });
+    }
+    
+    // 切换标签筛选
+    function toggleTagFilter(tag) {
+      const index = selectedTags.indexOf(tag);
+      if (index === -1) {
+        selectedTags.push(tag);
+      } else {
+        selectedTags.splice(index, 1);
+      }
+    }
+    
+    // 设置事件监听器
+    function setupEventListeners() {
+      // 新建提示词按钮
+      document.getElementById('new-prompt-btn').addEventListener('click', openNewPromptModal);
+      document.getElementById('empty-new-btn').addEventListener('click', openNewPromptModal);
+      
+      // 关闭模态框按钮
+      document.getElementById('close-modal').addEventListener('click', closePromptModal);
+      document.getElementById('cancel-btn').addEventListener('click', closePromptModal);
+      
+      // 表单提交
+      promptForm.addEventListener('submit', handleFormSubmit);
+      
+      // 标签输入事件
+      promptTagsInput.addEventListener('input', handleTagsInput);
+      
+      // 视图切换
+      viewToggle.addEventListener('change', (e) => {
+        currentView = e.target.value;
+        renderPrompts();
+      });
+      
+      // 删除确认
+      document.getElementById('confirm-delete').addEventListener('click', confirmDelete);
+      document.getElementById('cancel-delete').addEventListener('click', closeDeleteModal);
+      
+      // 关闭通知
+      document.getElementById('close-notification').addEventListener('click', closeNotification);
+      
+      // 点击模态框背景关闭模态框
+      promptModal.addEventListener('click', (e) => {
+        if (e.target === promptModal) {
+          closePromptModal();
+        }
+      });
+      
+      deleteModal.addEventListener('click', (e) => {
+        if (e.target === deleteModal) {
+          closeDeleteModal();
+        }
+      });
+    }
+    
+    // 打开新建提示词模态框
+    function openNewPromptModal() {
+      // 重置表单
+      promptForm.reset();
+      promptIdInput.value = '';
+      modalTitle.textContent = '新建提示词';
+      selectedTagsContainer.innerHTML = '';
+      selectedTags = [];
+      
+      // 显示推荐标签
+      showSuggestedTags();
+      
+      // 显示模态框
+      openModal(promptModal);
+      
+      // 聚焦到标题输入框
+      setTimeout(() => {
+        promptTitleInput.focus();
+      }, 100);
+    }
+    
+    // 打开编辑提示词模态框
+    function openEditPromptModal(id) {
+      // 查找提示词
+      const prompt = prompts.find(p => p.id === id);
+      if (!prompt) return;
+      
+      // 填充表单
+      promptIdInput.value = prompt.id;
+      promptTitleInput.value = prompt.title;
+      promptContentInput.value = prompt.content;
+      promptTagsInput.value = '';
+      modalTitle.textContent = '编辑提示词';
+      
+      // 设置当前编辑的提示词ID
+      editingPromptId = id;
+      
+      // 显示已选标签
+      selectedTags = [...prompt.tags];
+      renderSelectedTags();
+      
+      // 显示推荐标签
+      showSuggestedTags();
+      
+      // 显示模态框
+      openModal(promptModal);
+      
+      // 聚焦到标题输入框
+      setTimeout(() => {
+        promptTitleInput.focus();
+      }, 100);
+    }
+    
+    // 打开删除提示词模态框
+    function openDeletePromptModal(id) {
+      deletePromptId = id;
+      openModal(deleteModal);
+    }
+    
+    // 关闭提示词模态框
+    function closePromptModal() {
+      closeModal(promptModal);
+      editingPromptId = null;
+    }
+    
+    // 关闭删除提示词模态框
+    function closeDeleteModal() {
+      closeModal(deleteModal);
+      deletePromptId = null;
+    }
+    
+    // 打开模态框
+    function openModal(modal) {
+      modal.classList.add('active');
+      modal.classList.remove('pointer-events-none');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // 关闭模态框
+    function closeModal(modal) {
+      modal.classList.remove('active');
+      modal.classList.add('pointer-events-none');
+      document.body.style.overflow = '';
+    }
+    
+    // 处理表单提交
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      // 获取表单数据
+      const id = promptIdInput.value;
+      const title = promptTitleInput.value.trim();
+      const content = promptContentInput.value.trim();
+      const tags = [...selectedTags];
+      
+      // 验证
+      if (!title || !content) {
+        showNotification('输入错误', '标题和内容不能为空', 'error');
+        return;
+      }
+      
+      if (tags.length === 0) {
+        // 如果没有标签，添加一个默认标签
+        tags.push('未分类');
+      }
+      
+      if (id) {
+        // 编辑现有提示词
+        const index = prompts.findIndex(p => p.id === id);
+        if (index !== -1) {
+          const updatedPrompt = {
+            ...prompts[index],
+            title,
+            content,
+            tags,
+            updatedAt: new Date().toISOString()
+          };
+          
+          prompts[index] = updatedPrompt;
+          savePrompts();
+          renderPrompts();
+          renderTags();
+          closePromptModal();
+          
+          showNotification('更新成功', '提示词已更新', 'success');
+        }
+      } else {
+        // 创建新提示词
+        const newPrompt = {
+          id: generateId(),
+          title,
+          content,
+          tags,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        prompts.unshift(newPrompt); // 添加到开头
+        savePrompts();
+        renderPrompts();
+        renderTags();
+        closePromptModal();
+        
+        showNotification('创建成功', '新提示词已保存', 'success');
+      }
+    }
+    
+    // 处理标签输入
+    function handleTagsInput(e) {
+      const inputValue = e.target.value.trim();
+      
+      // 如果输入了逗号，添加标签
+      if (inputValue.includes(',')) {
+        const tag = inputValue.split(',')[0].trim();
+        if (tag && !selectedTags.includes(tag)) {
+          selectedTags.push(tag);
+          renderSelectedTags();
+          e.target.value = '';
+        }
+      }
+      
+      // 显示推荐标签
+      showSuggestedTags(inputValue);
+    }
+    
+    // 显示推荐标签
+    function showSuggestedTags(inputValue = '') {
+      // 获取所有标签并计算每个标签的使用次数
+      const tagCounts = {};
+      prompts.forEach(prompt => {
+        prompt.tags.forEach(tag => {
+          if (!selectedTags.includes(tag)) {
+            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+          }
+        });
+      });
+      
+      // 清空推荐标签容器
+      suggestedTagsContainer.innerHTML = '';
+      
+      // 如果没有输入值且有标签，显示热门标签
+      if (!inputValue && Object.keys(tagCounts).length > 0) {
+        // 按使用次数排序
+        const sortedTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
+        
+        // 显示前5个热门标签
+        const topTags = sortedTags.slice(0, 5);
+        topTags.forEach(tag => {
+          const tagHTML = `
+            <span class="tag-pill tag-pill-inactive cursor-pointer" data-tag="${tag}">
+              ${tag} <span class="ml-1">(${tagCounts[tag]})</span>
+            </span>
+          `;
+          suggestedTagsContainer.innerHTML += tagHTML;
+        });
+        
+        // 添加点击事件
+        document.querySelectorAll('#suggested-tags .tag-pill').forEach(tag => {
+          tag.addEventListener('click', (e) => {
+            const tagText = e.target.dataset.tag;
+            if (!selectedTags.includes(tagText)) {
+              selectedTags.push(tagText);
+              renderSelectedTags();
+              showSuggestedTags();
+            }
+          });
+        });
+      }
+      // 如果有输入值，显示匹配的标签
+      else if (inputValue) {
+        // 过滤匹配的标签
+        const matchedTags = Object.keys(tagCounts).filter(tag => 
+          tag.toLowerCase().includes(inputValue.toLowerCase())
+        );
+        
+        // 显示匹配的标签
+        matchedTags.forEach(tag => {
+          const tagHTML = `
+            <span class="tag-pill tag-pill-inactive cursor-pointer" data-tag="${tag}">
+              ${tag} <span class="ml-1">(${tagCounts[tag]})</span>
+            </span>
+          `;
+          suggestedTagsContainer.innerHTML += tagHTML;
+        });
+        
+        // 添加点击事件
+        document.querySelectorAll('#suggested-tags .tag-pill').forEach(tag => {
+          tag.addEventListener('click', (e) => {
+            const tagText = e.target.dataset.tag;
+            if (!selectedTags.includes(tagText)) {
+              selectedTags.push(tagText);
+              renderSelectedTags();
+              promptTagsInput.value = '';
+              showSuggestedTags();
+            }
+          });
+        });
+      }
+    }
+    
+    // 渲染已选标签
+    function renderSelectedTags() {
+      selectedTagsContainer.innerHTML = '';
+      
+      selectedTags.forEach((tag, index) => {
+        const tagHTML = `
+          <span class="tag-pill tag-pill-active flex items-center">
+            ${tag}
+            <button class="ml-2 text-white hover:text-neutral-200 transition-colors" data-index="${index}">
+              <i class="fa fa-times-circle"></i>
+            </button>
+          </span>
+        `;
+        selectedTagsContainer.innerHTML += tagHTML;
+      });
+      
+      // 添加删除标签事件
+      document.querySelectorAll('#selected-tags .tag-pill button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = parseInt(e.target.closest('button').dataset.index);
+          selectedTags.splice(index, 1);
+          renderSelectedTags();
+          showSuggestedTags();
+        });
+      });
+    }
+    
+    // 确认删除
+    function confirmDelete() {
+      if (!deletePromptId) return;
+      
+      // 删除提示词
+      const initialLength = prompts.length;
+      prompts = prompts.filter(p => p.id !== deletePromptId);
+      
+      if (prompts.length < initialLength) {
+        savePrompts();
+        renderPrompts();
+        renderTags();
+        closeDeleteModal();
+        
+        showNotification('删除成功', '提示词已删除', 'success');
+      } else {
+        closeDeleteModal();
+        showNotification('删除失败', '无法删除提示词', 'error');
+      }
+    }
+    
+    // 显示通知
+    function showNotification(title, message, type = 'info') {
+      // 设置通知内容
+      notificationTitle.textContent = title;
+      notificationMessage.textContent = message;
+      
+      // 设置通知类型
+      if (type === 'success') {
+        notificationIcon.className = 'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-3 bg-green-100 text-green-500';
+        notificationIconI.className = 'fa fa-check';
+      } else if (type === 'error') {
+        notificationIcon.className = 'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-3 bg-red-100 text-red-500';
+        notificationIconI.className = 'fa fa-exclamation-circle';
+      } else if (type === 'warning') {
+        notificationIcon.className = 'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-3 bg-yellow-100 text-yellow-500';
+        notificationIconI.className = 'fa fa-exclamation-triangle';
+      } else {
+        notificationIcon.className = 'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-3 bg-blue-100 text-blue-500';
+        notificationIconI.className = 'fa fa-info-circle';
+      }
+      
+      // 显示通知
+      notification.classList.remove('translate-y-20', 'opacity-0');
+      
+      // 自动关闭通知
+      clearTimeout(window.notificationTimeout);
+      window.notificationTimeout = setTimeout(() => {
+        closeNotification();
+      }, 3000);
+    }
+    
+    // 关闭通知
+    function closeNotification() {
+      notification.classList.add('translate-y-20', 'opacity-0');
+    }
+    
+    // 生成唯一ID
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    }
+    
+    // 检查是否有示例数据，如果没有则添加
+    function checkSampleData() {
+      if (prompts.length === 0) {
+        const samplePrompts = [
+          {
+            id: 'sample1',
+            title: '创意写作助手',
+            content: '我需要写一篇关于[主题]的创意文章，请提供一些独特的角度和创意点子。要求内容新颖，有深度，能够吸引读者的注意力。',
+            tags: ['写作', '创意', '内容生成'],
+            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 'sample2',
+            title: '代码优化建议',
+            content: '分析以下代码并提供优化建议：\n\n[在此粘贴代码]\n\n请指出潜在的性能问题、安全漏洞或代码风格问题，并提供改进方案。',
+            tags: ['编程', '代码优化', '技术'],
+            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 'sample3',
+            title: '旅行计划生成器',
+            content: '帮我规划一个[天数]天的[目的地]旅行计划。请包括必去景点、当地美食推荐、交通建议和预算估算。考虑我的兴趣是[兴趣爱好]。',
+            tags: ['旅行', '规划', '生活'],
+            createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+        
+        prompts = samplePrompts;
+        savePrompts();
+        renderPrompts();
+        renderTags();
+      }
+    }
+    
+    // 初始化应用
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
