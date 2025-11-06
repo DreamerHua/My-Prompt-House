@@ -376,6 +376,9 @@
       // 从 localStorage 加载数据
       loadPrompts();
       
+      // 尝试加载默认文件
+      loadDefaultFile();
+      
       // 渲染提示词卡片
       renderPrompts();
       
@@ -387,6 +390,52 @@
       
       // 检查是否有示例数据，如果没有则添加
       checkSampleData();
+    }
+    
+    // 尝试加载默认文件
+    function loadDefaultFile() {
+      // 检查是否已经从localStorage加载了数据
+      if (prompts.length > 0) {
+        console.log('已从localStorage加载数据，跳过默认文件加载');
+        return;
+      }
+      
+      // 尝试加载default.json文件
+      fetch('default.json')
+        .then(response => {
+          if (!response.ok) {
+            console.log('默认文件不存在或无法访问:', response.statusText);
+            return null;
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data && Array.isArray(data)) {
+            // 验证数据格式
+            const isValid = data.every(item => 
+              item.id && item.title && item.content && Array.isArray(item.tags)
+            );
+            
+            if (isValid) {
+              prompts = data;
+              savePrompts(); // 保存到localStorage
+              showNotification('默认数据加载成功', `成功加载 ${data.length} 个提示词`, 'success');
+              console.log('默认文件加载成功:', data.length, '个提示词');
+            } else {
+              console.log('默认文件格式无效');
+              showNotification('默认数据格式无效', 'default文件格式不正确', 'warning');
+            }
+          } else if (data === null) {
+            // 文件不存在，不做任何操作
+          } else {
+            console.log('默认文件格式无效');
+            showNotification('默认数据格式无效', '默认文件格式不正确', 'warning');
+          }
+        })
+        .catch(error => {
+          console.error('加载默认文件失败:', error);
+          // 不显示错误通知，因为这是可选功能
+        });
     }
     
     // 从 localStorage 加载数据
