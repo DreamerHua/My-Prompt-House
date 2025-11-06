@@ -190,6 +190,17 @@
             <i class="fa fa-chevron-down text-xs"></i>
           </div>
         </div>
+        
+        <div class="flex gap-2">
+          <button id="import-btn" class="btn-secondary flex items-center justify-center">
+            <i class="fa fa-upload mr-2"></i>
+            <span>导入</span>
+          </button>
+          <button id="export-btn" class="btn-secondary flex items-center justify-center">
+            <i class="fa fa-download mr-2"></i>
+            <span>导出</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -691,6 +702,8 @@
       
       // 标签输入事件
       promptTagsInput.addEventListener('input', handleTagsInput);
+      promptTagsInput.addEventListener('keydown', handleTagsKeyDown);
+      promptTagsInput.addEventListener('blur', handleTagsBlur);
       
       // 视图切换
       viewToggle.addEventListener('change', (e) => {
@@ -704,6 +717,10 @@
       
       // 关闭通知
       document.getElementById('close-notification').addEventListener('click', closeNotification);
+      
+      // 导入/导出按钮
+      document.getElementById('import-btn').addEventListener('click', handleImport);
+      document.getElementById('export-btn').addEventListener('click', handleExport);
       
       // 点击模态框背景关闭模态框
       promptModal.addEventListener('click', (e) => {
@@ -882,6 +899,31 @@
       
       // 显示推荐标签
       showSuggestedTags(inputValue);
+    }
+    
+    // 处理标签输入回车事件
+    function handleTagsKeyDown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const inputValue = e.target.value.trim();
+        if (inputValue && !selectedTags.includes(inputValue)) {
+          selectedTags.push(inputValue);
+          renderSelectedTags();
+          e.target.value = '';
+          showSuggestedTags();
+        }
+      }
+    }
+    
+    // 处理标签输入失去焦点事件
+    function handleTagsBlur(e) {
+      const inputValue = e.target.value.trim();
+      if (inputValue && !selectedTags.includes(inputValue)) {
+        selectedTags.push(inputValue);
+        renderSelectedTags();
+        e.target.value = '';
+        showSuggestedTags();
+      }
     }
     
     // 显示推荐标签
@@ -1083,6 +1125,114 @@
         renderPrompts();
         renderTags();
       }
+    }
+    
+    // 处理导入功能
+    function handleImport() {
+      // 使用已有的隐藏文件输入元素
+      const fileInput = document.getElementById('import-file');
+      
+      // 重置文件输入值，以便可以选择同一个文件
+      fileInput.value = '';
+      
+      // 监听文件选择事件
+      const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // 移除事件监听器，避免重复触发
+        fileInput.removeEventListener('change', handleFileSelect);
+        
+        // 检查文件类型
+        if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+          showNotification('导入失败', '请选择JSON格式的文件', 'error');
+          return;
+        }
+        
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+          try {
+            const importedData = JSON.parse(e.target.result);
+            
+            // 验证数据格式
+            if (!Array.isArray(importedData)) {
+              throw new Error('数据格式不正确');
+            }
+            
+            // 显示自定义确认对话框
+            const confirmImport = window.confirm('确定要导入数据吗？这将覆盖当前所有提示词。');
+            
+            if (confirmImport) {
+              // 保存原始数据，以便在导入失败失败时恢复
+              const originalPrompts = [...prompts];
+              
+              try {
+                prompts = importedData;
+                savePrompts();
+                renderPrompts();
+                renderTags();
+                
+                // 确保通知能正确显示
+                setTimeout(() => {
+                  showNotification('导入成功', `成功导入 ${importedData.length} 个提示词`, 'success');
+                }, 100);
+              } catch (saveError) {
+                // 导入失败，恢复原始数据
+                prompts = originalPrompts;
+                showNotification('导入失败', '保存数据时发生错误', 'error');
+                console.error('保存数据失败:', saveError);
+              }
+            }
+          } catch (error) {
+            showNotification('导入失败', '文件格式错误或内容损坏', 'error');
+            console.error('导入失败:', error);
+          }
+        };
+        
+        reader.onerror = () => {
+          showNotification('导入失败', '读取文件时发生错误', 'error');
+          console.error('读取文件失败');
+        };
+        
+        reader.readAsText(file);
+      };
+      
+      // 添加事件监听器
+      fileInput.addEventListener('change', handleFileSelect);
+      
+      // 触发文件选择对话框
+      fileInput.click();
+    }
+    
+    // 处理导出功能
+    function handleExport() {
+      if (prompts.length === 0) {
+        showNotification('导出失败', '没有可导出的提示词', 'error');
+        return;
+      }
+      
+      // 创建导出数据
+      const exportData = JSON.stringify(prompts, null, 2);
+      const blob = new Blob([exportData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // 创建下载链接
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `my-prompt-house-export-${new Date().toISOString().slice(0, 10)}.json`;
+      
+      // 触发下载
+      document.body.appendChild(a);
+      a.click();
+      
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+      
+      showNotification('导出成功', `成功导出 ${prompts.length} 个提示词`, 'success');
     }
     
     // 初始化应用
