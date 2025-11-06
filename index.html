@@ -1129,19 +1129,33 @@
     
     // 处理导入功能
     function handleImport() {
-      // 使用已有的隐藏文件输入元素
-      const fileInput = document.getElementById('import-file');
+      // 显示一个临时通知，确认函数被调用
+      showNotification('导入操作', '正在准备导入...', 'info');
       
-      // 重置文件输入值，以便可以选择同一个文件
-      fileInput.value = '';
+      // 创建一个临时的文件输入元素
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.json';
+      fileInput.style.display = 'none';
+      
+      // 添加到DOM中
+      document.body.appendChild(fileInput);
       
       // 监听文件选择事件
-      const handleFileSelect = (e) => {
+      fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
-        if (!file) return;
         
-        // 移除事件监听器，避免重复触发
-        fileInput.removeEventListener('change', handleFileSelect);
+        // 无论是否选择了文件，都先移除临时元素
+        document.body.removeChild(fileInput);
+        
+        if (!file) {
+          // 用户取消了文件选择
+          showNotification('导入取消', '未选择任何文件', 'info');
+          return;
+        }
+        
+        // 显示正在处理的通知
+        showNotification('导入中', `正在处理文件: ${file.name}`, 'info');
         
         // 检查文件类型
         if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
@@ -1151,58 +1165,159 @@
         
         const reader = new FileReader();
         
-        reader.onload = (e) => {
+        reader.onloadstart = function() {
+          showNotification('导入中', '正在读取文件内容...', 'info');
+        };
+        
+        reader.onload = function(e) {
           try {
+            // 解析导入的数据
             const importedData = JSON.parse(e.target.result);
             
             // 验证数据格式
             if (!Array.isArray(importedData)) {
-              throw new Error('数据格式不正确');
+              throw new Error('数据格式不正确，应为提示词数组');
             }
             
             // 显示自定义确认对话框
-            const confirmImport = window.confirm('确定要导入数据吗？这将覆盖当前所有提示词。');
+            showImportConfirmation(importedData);
             
-            if (confirmImport) {
-              // 保存原始数据，以便在导入失败失败时恢复
-              const originalPrompts = [...prompts];
-              
-              try {
-                prompts = importedData;
-                savePrompts();
-                renderPrompts();
-                renderTags();
-                
-                // 确保通知能正确显示
-                setTimeout(() => {
-                  showNotification('导入成功', `成功导入 ${importedData.length} 个提示词`, 'success');
-                }, 100);
-              } catch (saveError) {
-                // 导入失败，恢复原始数据
-                prompts = originalPrompts;
-                showNotification('导入失败', '保存数据时发生错误', 'error');
-                console.error('保存数据失败:', saveError);
-              }
-            }
           } catch (error) {
             showNotification('导入失败', '文件格式错误或内容损坏', 'error');
             console.error('导入失败:', error);
+            console.error('错误详情:', error.message);
+            console.error('堆栈跟踪:', error.stack);
           }
         };
         
-        reader.onerror = () => {
+        reader.onerror = function() {
           showNotification('导入失败', '读取文件时发生错误', 'error');
-          console.error('读取文件失败');
+          console.error('读取文件失败:', reader.error);
         };
         
-        reader.readAsText(file);
-      };
-      
-      // 添加事件监听器
-      fileInput.addEventListener('change', handleFileSelect);
+        reader.onabort = function() {
+          showNotification('导入取消', '文件读取已中止', 'info');
+          console.error('文件读取已中止');
+        };
+        
+        // 读取文件
+        try {
+          reader.readAsText(file);
+        } catch (readError) {
+          showNotification('导入失败', '启动文件读取时发生错误', 'error');
+          console.error('启动文件读取失败:', readError);
+          document.body.removeChild(fileInput);
+        }
+      });
       
       // 触发文件选择对话框
-      fileInput.click();
+      try {
+        fileInput.click();
+      } catch (clickError) {
+        showNotification('导入失败', '无法打开文件选择对话框', 'error');
+        console.error('打开文件选择对话框失败:', clickError);
+        document.body.removeChild(fileInput);
+      }
+    }
+    
+    // 显示自定义导入确认对话框
+    function showImportConfirmation(importedData) {
+      // 创建自定义对话框元素
+      const dialogContainer = document.createElement('div');
+      dialogContainer.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
+      dialogContainer.id = 'import-confirm-dialog';
+      
+      // 对话框内容
+      dialogContainer.innerHTML = `
+        <div class="bg-white rounded-xl shadow-xl overflow-hidden max-w-md w-full mx-auto">
+          <div class="p-6">
+            <div class="text-center mb-6">
+              <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-500 mb-4">
+                <i class="fa fa-question-circle text-2xl"></i>
+              </div>
+              <h3 class="text-xl font-bold text-neutral-800">确认导入</h3>
+              <p class="text-neutral-600 mt-2">你确定要导入 ${importedData.length} 个提示词吗？</p>
+              <p class="text-red-500 text-sm mt-2">注意：这将覆盖当前所有提示词数据！</p>
+            </div>
+            
+            <div class="flex justify-center gap-3">
+              <button id="cancel-import" class="btn-secondary">取消</button>
+              <button id="confirm-import" class="btn-primary">确认导入</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // 添加到DOM
+      document.body.appendChild(dialogContainer);
+      document.body.style.overflow = 'hidden';
+      
+      // 添加事件监听器
+      document.getElementById('confirm-import').addEventListener('click', function() {
+        // 用户确认导入
+        completeImport(importedData);
+        closeImportDialog();
+      });
+      
+      document.getElementById('cancel-import').addEventListener('click', function() {
+        // 用户取消导入
+        showNotification('导入取消', '用户取消了导入操作', 'info');
+        closeImportDialog();
+      });
+      
+      // 点击背景关闭对话框
+      dialogContainer.addEventListener('click', function(e) {
+        if (e.target === dialogContainer) {
+          showNotification('导入取消', '用户取消了导入操作', 'info');
+          closeImportDialog();
+        }
+      });
+      
+      // 按ESC键关闭对话框
+      function handleEscKey(e) {
+        if (e.key === 'Escape') {
+          showNotification('导入取消', '用户取消了导入操作', 'info');
+          closeImportDialog();
+          document.removeEventListener('keydown', handleEscKey);
+        }
+      }
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      // 关闭对话框函数
+      function closeImportDialog() {
+        if (dialogContainer.parentNode) {
+          dialogContainer.parentNode.removeChild(dialogContainer);
+        }
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleEscKey);
+      }
+    }
+    
+    // 完成导入操作
+    function completeImport(importedData) {
+      showNotification('导入中', '正在保存导入的数据...', 'info');
+      
+      // 保存原始数据，以便在导入失败时恢复
+      const originalPrompts = JSON.parse(JSON.stringify(prompts));
+      
+      try {
+        // 更新数据
+        prompts = importedData;
+        savePrompts();
+        
+        // 更新UI
+        renderPrompts();
+        renderTags();
+        
+        // 显示成功通知
+        showNotification('导入成功', `成功导入 ${importedData.length} 个提示词`, 'success');
+      } catch (saveError) {
+        // 导入失败，恢复原始数据
+        prompts = originalPrompts;
+        showNotification('导入失败', '保存数据时发生错误', 'error');
+        console.error('保存数据失败:', saveError);
+      }
     }
     
     // 处理导出功能
